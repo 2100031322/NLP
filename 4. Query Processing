@@ -1,0 +1,11 @@
+def query_to_embeddings(query):
+    return get_embeddings(query)
+
+def retrieve_relevant_sections(query_embedding, top_k=5):
+    D, I = index.search(query_embedding, top_k)
+    return I[0]  # Return indices of top-k relevant sections
+
+def handle_query(query):
+    query_embedding = query_to_embeddings(query)
+    relevant_indices = retrieve_relevant_sections(query_embedding)
+    return [data_corpus[i] for i in relevant_indices]
