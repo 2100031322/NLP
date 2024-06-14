@@ -1,0 +1,70 @@
+import pandas as pd
+import numpy as np
+from transformers import AutoTokenizer, AutoModel, pipeline
+import torch
+import faiss
+
+# Load lecture notes
+with open('lecture_notes.txt', 'r') as file:
+    lecture_notes = file.read()
+
+# Load table of LLM architectures
+llm_table = pd.read_csv('llm_architectures.csv')
+
+# Combine data into a single corpus
+data_corpus = [lecture_notes] + llm_table['Description'].tolist()
+
+# Initialize tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+model = AutoModel.from_pretrained('bert-base-uncased')
+
+# Function to generate embeddings
+def get_embeddings(text):
+    inputs = tokenizer(text, return_tensors='pt', padding=True, truncation=True, max_length=512)
+    with torch.no_grad():
+        embeddings = model(**inputs).last_hidden_state.mean(dim=1)
+    return embeddings.numpy()
+
+# Generate embeddings for the data corpus
+embeddings = [get_embeddings(text) for text in data_corpus]
+
+# Create a FAISS index
+dimension = 768  # Dimension of BERT embeddings
+index = faiss.IndexFlatL2(dimension)
+
+# Add embeddings to the index
+index.add(np.vstack(embeddings))
+
+# Function to convert query to embeddings
+def query_to_embeddings(query):
+    return get_embeddings(query)
+
+# Function to retrieve relevant sections
+def retrieve_relevant_sections(query_embedding, top_k=5):
+    D, I = index.search(query_embedding, top_k)
+    return I[0]  # Return indices of top-k relevant sections
+
+# Function to handle query
+def handle_query(query):
+    query_embedding = query_to_embeddings(query)
+    relevant_indices = retrieve_relevant_sections(query_embedding)
+    return [data_corpus[i] for i in relevant_indices]
+
+# Load text generation model
+generator = pipeline('text-generation', model='gpt-2')
+
+# Function to generate response
+def generate_response(relevant_texts):
+    context = " ".join(relevant_texts)
+    response = generator(context, max_length=150, num_return_sequences=1)
+    return response[0]['text']
+
+# Function to get answer for a query
+def get_answer(query):
+    relevant_texts = handle_query(query)
+    answer = generate_response(relevant_texts)
+    return answer
+
+# Example query
+query = "What are some milestone model architectures and papers in the last few years?"
+print(get_answer(query))
