@@ -1,0 +1,14 @@
+from transformers import AutoTokenizer, AutoModel
+import torch
+
+tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+model = AutoModel.from_pretrained('bert-base-uncased')
+
+def get_embeddings(text):
+    inputs = tokenizer(text, return_tensors='pt', padding=True, truncation=True, max_length=512)
+    with torch.no_grad():
+        embeddings = model(**inputs).last_hidden_state.mean(dim=1)
+    return embeddings.numpy()
+
+# Generate embeddings for the data corpus
+embeddings = [get_embeddings(text) for text in data_corpus]
