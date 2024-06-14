@@ -1,0 +1,11 @@
+import pandas as pd
+
+# Load lecture notes
+with open('lecture_notes.txt', 'r') as file:
+    lecture_notes = file.read()
+
+# Load table of LLM architectures
+llm_table = pd.read_csv('llm_architectures.csv')
+
+# Combine data into a single corpus
+data_corpus = [lecture_notes] + llm_table['Description'].tolist()
