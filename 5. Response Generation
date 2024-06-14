@@ -1,0 +1,18 @@
+from transformers import pipeline
+
+# Load a text generation model
+generator = pipeline('text-generation', model='gpt-2')
+
+def generate_response(relevant_texts):
+    context = " ".join(relevant_texts)
+    response = generator(context, max_length=150, num_return_sequences=1)
+    return response[0]['text']
+
+def get_answer(query):
+    relevant_texts = handle_query(query)
+    answer = generate_response(relevant_texts)
+    return answer
+
+# Example query
+query = "What are some milestone model architectures and papers in the last few years?"
+print(get_answer(query))
