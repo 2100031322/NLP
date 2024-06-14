@@ -1,0 +1,8 @@
+import faiss
+
+# Create a FAISS index
+dimension = 768  # Dimension of BERT embeddings
+index = faiss.IndexFlatL2(dimension)
+
+# Add embeddings to the index
+index.add(np.vstack(embeddings))
